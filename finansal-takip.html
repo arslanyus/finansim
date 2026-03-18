@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finansım">
+<title>Finansım</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --bg2: #181818;
+    --bg3: #222222;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0ede8;
+    --muted: #888;
+    --hint: #555;
+    --green: #4ade9a;
+    --green-dim: rgba(74,222,154,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --pink: #f472b6;
+    --pink-dim: rgba(244,114,182,0.12);
+    --accent: #f0ede8;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
+  body { display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom); }
+
+  /* Header */
+  .header { padding: 52px 20px 20px; background: var(--bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--border); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .header h1 { font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .header-balance { font-size: 36px; font-weight: 300; font-family: 'DM Mono', monospace; letter-spacing: -1px; }
+  .header-balance.positive { color: var(--green); }
+  .header-balance.negative { color: var(--red); }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Metrics strip */
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric { background: var(--bg3); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .metric-label { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+  .metric-value { font-size: 14px; font-weight: 500; font-family: 'DM Mono', monospace; }
+  .metric-value.g { color: var(--green); }
+  .metric-value.r { color: var(--red); }
+  .metric-value.p { color: var(--pink); }
+
+  /* Tabs */
+  .tabs { display: flex; padding: 12px 20px; gap: 6px; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .tab { padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border2); background: transparent; color: var(--muted); font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.2s; }
+  .tab.active { background: var(--text); color: var(--bg); border-color: transparent; font-weight: 500; }
+
+  /* Content */
+  .content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Card */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .card-title { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+
+  /* Form */
+  .form-stack { display: flex; flex-direction: column; gap: 10px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+  input, select {
+    background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px;
+    padding: 10px 12px; width: 100%; outline: none; -webkit-appearance: none; appearance: none;
+  }
+  input:focus, select:focus { border-color: rgba(255,255,255,0.3); }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .btn-add {
+    background: var(--text); color: var(--bg); border: none; border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    padding: 12px; width: 100%; cursor: pointer; margin-top: 2px; letter-spacing: 0.02em;
+    transition: opacity 0.15s;
+  }
+  .btn-add:active { opacity: 0.75; }
+
+  /* Chart */
+  .chart-bar-wrap { margin: 6px 0; }
+  .chart-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .chart-label span:last-child { color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px; }
+  .prog-track { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 2px; background: var(--red); transition: width 0.4s ease; }
+
+  /* Transaction list */
+  .tr-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); gap: 8px; }
+  .tr-item:last-child { border-bottom: none; }
+  .tr-left { flex: 1; min-width: 0; }
+  .tr-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tr-meta { font-size: 11px; color: var(--hint); margin-top: 2px; }
+  .tr-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .tr-amount { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+  .tr-amount.g { color: var(--green); }
+  .tr-amount.r { color: var(--red); }
+  .del { background: none; border: none; color: var(--hint); font-size: 18px; cursor: pointer; padding: 2px 4px; line-height: 1; }
+  .del:active { color: var(--red); }
+
+  /* Debt */
+  .debt-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .debt-item:last-child { border-bottom: none; }
+  .debt-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .debt-name { font-size: 14px; font-weight: 500; }
+  .debt-tag { font-size: 10px; color: var(--pink); background: var(--pink-dim); border-radius: 20px; padding: 2px 8px; margin-top: 3px; display: inline-block; }
+  .debt-amount { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--pink); font-weight: 500; }
+  .debt-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--hint); margin-bottom: 5px; }
+  .prog-fill-green { background: var(--green); }
+  .debt-due { font-size: 10px; color: var(--hint); margin-top: 5px; }
+
+  /* Empty */
+  .empty { text-align: center; color: var(--hint); font-size: 13px; padding: 20px 0; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(10px); background: var(--green); color: #000; padding: 9px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 999; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>Net Bakiye</h1>
+      <div class="header-balance" id="main-balance">₺0</div>
+      <div class="header-sub" id="main-sub">Henüz kayıt yok</div>
+    </div>
+  </div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Gelir</div>
+      <div class="metric-value g" id="m-inc">₺0</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Gider</div>
+      <div class="metric-value r" id="m-exp">₺0</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Borç</div>
+      <div class="metric-value p" id="m-debt">₺0</div>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-gg" onclick="showPage('gg',this)">Gelir / Gider</button>
+  <button class="tab" id="tab-borc" onclick="showPage('borc',this)">Borçlar</button>
+</div>
+
+<div class="content">
+
+  <div class="page active" id="page-gg">
+    <div class="card">
+      <div class="card-title">Yeni kayıt</div>
+      <div class="form-stack">
+        <div class="form-group">
+          <label>Açıklama</label>
+          <input type="text" id="tr-name" placeholder="örn. Maaş, Market...">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tutar (₺)</label>
+            <input type="number" id="tr-amount" placeholder="0" min="0" inputmode="decimal">
+          </div>
+          <div class="form-group">
+            <label>Tür</label>
+            <select id="tr-type">
+              <option value="income">Gelir</option>
+              <option value="expense">Gider</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Kategori</label>
+            <select id="tr-cat">
+              <option>Maaş</option><option>Kira</option><option>Market</option>
+              <option>Fatura</option><option>Ulaşım</option><option>Eğlence</option>
+              <option>Sağlık</option><option>Diğer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tarih</label>
+            <input type="date" id="tr-date">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addTransaction()">Ekle</button>
+      </div>
+    </div>
+
+    <div class="card" id="chart-card" style="display:none">
+      <div class="card-title">Gider dağılımı</div>
+      <div id="chart-area"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">İşlemler</div>
+      <div id="transaction-list"><div class="empty">Henüz kayıt yok</div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-borc">
+    <div class="card">
+      <div class="card-title">Yeni borç / taksit</div>
+      <div class="form-stack">
+        <div class="form-group">
+          <label>Açıklama</label>
+          <input type="text" id="d-name" placeholder="örn. Konut kredisi...">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Toplam (₺)</label>
+            <input type="number" id="d-total" placeholder="0" min="0" inputmode="decimal">
+          </div>
+          <div class="form-group">
+            <label>Ödenen (₺)</label>
+            <input type="number" id="d-paid" placeholder="0" min="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Aylık taksit (₺)</label>
+            <input type="number" id="d-inst" placeholder="0" min="0" inputmode="decimal">
+          </div>
+          <div class="form-group">
+            <label>Son tarih</label>
+            <input type="date" id="d-due">
+          </div>
+        </div>
+        <button class="btn-add" onclick="addDebt()">Ekle</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Borç listesi</div>
+      <div id="debt-list"><div class="empty">Henüz borç kaydı yok</div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEYS = { tr: 'fin_tr_v2', debts: 'fin_debts_v2' };
+function load(k) { try { return JSON.parse(localStorage.getItem(k)) || []; } catch(e) { return []; } }
+function save(k, d) { try { localStorage.setItem(k, JSON.stringify(d)); } catch(e) {} }
+
+let transactions = load(KEYS.tr);
+let debts = load(KEYS.debts);
+
+function fmt(n) { return '₺' + Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 }); }
+function today() { return new Date().toISOString().slice(0,10); }
+
+document.getElementById('tr-date').value = today();
+document.getElementById('d-due').value = today();
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+function addTransaction() {
+  const name = document.getElementById('tr-name').value.trim();
+  const amount = parseFloat(document.getElementById('tr-amount').value);
+  const type = document.getElementById('tr-type').value;
+  const cat = document.getElementById('tr-cat').value;
+  const date = document.getElementById('tr-date').value;
+  if (!name || !amount || amount <= 0) { showToast('Açıklama ve tutar girin'); return; }
+  transactions.push({ id: Date.now(), name, amount, type, cat, date });
+  save(KEYS.tr, transactions);
+  document.getElementById('tr-name').value = '';
+  document.getElementById('tr-amount').value = '';
+  showToast('Kaydedildi ✓');
+  render();
+}
+
+function addDebt() {
+  const name = document.getElementById('d-name').value.trim();
+  const total = parseFloat(document.getElementById('d-total').value) || 0;
+  const paid = parseFloat(document.getElementById('d-paid').value) || 0;
+  const inst = parseFloat(document.getElementById('d-inst').value) || 0;
+  const due = document.getElementById('d-due').value;
+  if (!name || total <= 0) { showToast('Açıklama ve tutar girin'); return; }
+  debts.push({ id: Date.now(), name, total, paid: Math.min(paid, total), inst, due });
+  save(KEYS.debts, debts);
+  document.getElementById('d-name').value = '';
+  document.getElementById('d-total').value = '';
+  document.getElementById('d-paid').value = '';
+  document.getElementById('d-inst').value = '';
+  showToast('Kaydedildi ✓');
+  render();
+}
+
+function deleteTransaction(id) {
+  transactions = transactions.filter(t => t.id !== id);
+  save(KEYS.tr, transactions);
+  render();
+}
+
+function deleteDebt(id) {
+  debts = debts.filter(d => d.id !== id);
+  save(KEYS.debts, debts);
+  render();
+}
+
+function render() {
+  const inc = transactions.filter(t => t.type === 'income').reduce((s,t) => s+t.amount, 0);
+  const exp = transactions.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount, 0);
+  const totalDebt = debts.reduce((s,d) => s+(d.total-d.paid), 0);
+  const bal = inc - exp;
+
+  const balEl = document.getElementById('main-balance');
+  balEl.textContent = fmt(bal);
+  balEl.className = 'header-balance ' + (bal >= 0 ? 'positive' : 'negative');
+  document.getElementById('main-sub').textContent = transactions.length > 0
+    ? (bal >= 0 ? 'Durumun iyi görünüyor' : 'Giderler geliri aşıyor')
+    : 'Henüz kayıt yok';
+
+  document.getElementById('m-inc').textContent = fmt(inc);
+  document.getElementById('m-exp').textContent = fmt(exp);
+  document.getElementById('m-debt').textContent = fmt(totalDebt);
+
+  const cats = {};
+  transactions.filter(t => t.type === 'expense').forEach(t => { cats[t.cat] = (cats[t.cat]||0) + t.amount; });
+  const sortedCats = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+  const chartCard = document.getElementById('chart-card');
+  if (!sortedCats.length) {
+    chartCard.style.display = 'none';
+  } else {
+    chartCard.style.display = 'block';
+    const maxVal = sortedCats[0][1];
+    document.getElementById('chart-area').innerHTML = sortedCats.map(([cat,val]) => `
+      <div class="chart-bar-wrap">
+        <div class="chart-label"><span>${cat}</span><span>${fmt(val)}</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:${Math.round(val/maxVal*100)}%"></div></div>
+      </div>`).join('');
+  }
+
+  const trEl = document.getElementById('transaction-list');
+  if (!transactions.length) {
+    trEl.innerHTML = '<div class="empty">Henüz kayıt yok</div>';
+  } else {
+    const sorted = [...transactions].sort((a,b) => b.date.localeCompare(a.date));
+    trEl.innerHTML = sorted.map(t => `
+      <div class="tr-item">
+        <div class="tr-left">
+          <div class="tr-name">${t.name}</div>
+          <div class="tr-meta">${t.date} · ${t.cat}</div>
+        </div>
+        <div class="tr-right">
+          <span class="tr-amount ${t.type==='income'?'g':'r'}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</span>
+          <button class="del" onclick="deleteTransaction(${t.id})">×</button>
+        </div>
+      </div>`).join('');
+  }
+
+  const dEl = document.getElementById('debt-list');
+  if (!debts.length) {
+    dEl.innerHTML = '<div class="empty">Henüz borç kaydı yok</div>';
+  } else {
+    dEl.innerHTML = debts.map(d => {
+      const rem = d.total - d.paid;
+      const pct = d.total > 0 ? Math.round(d.paid/d.total*100) : 0;
+      return `
+        <div class="debt-item">
+          <div class="debt-header">
+            <div>
+              <div class="debt-name">${d.name}</div>
+              ${d.inst > 0 ? `<span class="debt-tag">${fmt(d.inst)} / ay</span>` : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="debt-amount">${fmt(rem)}</span>
+              <button class="del" onclick="deleteDebt(${d.id})">×</button>
+            </div>
+          </div>
+          <div class="debt-progress-label">
+            <span>Ödenen ${fmt(d.paid)} / ${fmt(d.total)}</span>
+            <span>${pct}%</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill prog-fill-green" style="width:${pct}%"></div></div>
+          ${d.due ? `<div class="debt-due">Son ödeme: ${d.due}</div>` : ''}
+        </div>`;
+    }).join('');
+  }
+}
+
+render();
+</script>
+</body>
+</html>
